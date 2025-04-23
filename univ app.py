@@ -152,3 +152,56 @@ for i in range(len(corr_matrix.columns)):
         col2 = corr_matrix.columns[j]
         value = corr_matrix.iloc[i, j]
         st.write(f"{col1} ↔ {col2}: {value:.2f} {interpret_correlation_visual(value)}")
+
+
+# ===============================
+# 📌 FILTER BERDASARKAN NEGARA
+# ===============================
+st.sidebar.header("🔍 Filter Data")
+
+negara_list = df['Country'].dropna().unique().tolist()
+negara_terpilih = st.sidebar.multiselect("Pilih Negara:", sorted(negara_list), default=negara_list[:3])
+
+df_filtered = df[df['Country'].isin(negara_terpilih)]
+
+st.subheader("📌 Data Setelah Difilter:")
+st.dataframe(df_filtered[['Institution', 'Country', 'Study', 'Academic', 'Employer', 'Score']])
+
+# ===============================
+# 📈 TREN TAHUNAN (JIKA ADA KOLOM TAHUN)
+# ===============================
+if 'Year' in df.columns:
+    st.subheader("📈 Tren Skor Rata-rata per Tahun")
+    df_tren = df_filtered.groupby('Year')['Score'].mean().reset_index()
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    sns.lineplot(x='Year', y='Score', data=df_tren, marker='o')
+    plt.title("Rata-rata Score per Tahun")
+    plt.xlabel("Tahun")
+    plt.ylabel("Score")
+    st.pyplot(fig)
+else:
+    st.info("📅 Kolom 'Year' tidak tersedia dalam dataset.")
+
+# ===============================
+# 🎓 PERBANDINGAN DUA UNIVERSITAS
+# ===============================
+st.sidebar.subheader("🎓 Bandingkan Dua Universitas")
+
+daftar_univ = df_filtered['Institution'].dropna().unique().tolist()
+univ_1 = st.sidebar.selectbox("Universitas Pertama", sorted(daftar_univ))
+univ_2 = st.sidebar.selectbox("Universitas Kedua", sorted(daftar_univ), index=1)
+
+df_compare = df_filtered[df_filtered['Institution'].isin([univ_1, univ_2])]
+metrics_to_plot = ['Academic', 'Employer', 'Citations', 'H', 'IRN', 'Score']
+df_plot = df_compare.set_index('Institution')[metrics_to_plot].T
+
+st.subheader(f"📊 Perbandingan Antara {univ_1} dan {univ_2}")
+fig, ax = plt.subplots(figsize=(8, 5))
+df_plot.plot(kind='bar', ax=ax)
+plt.title(f"Perbandingan Metrik")
+plt.ylabel("Nilai")
+plt.xticks(rotation=45)
+plt.tight_layout()
+st.pyplot(fig)
+
