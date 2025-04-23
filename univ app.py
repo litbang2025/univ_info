@@ -41,8 +41,8 @@ for col in cols_to_convert:
         df[col] = df[col].astype(str).str.replace(',', '.', regex=False)
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-#st.write("🧾 Tipe Data Setelah Dibersihkan:")
-#st.write(df.dtypes)
+st.write("🧾 Tipe Data Setelah Dibersihkan:")
+st.write(df.dtypes)
 st.dataframe(df.head())
 
 # ===============================
@@ -76,30 +76,8 @@ safe_display(bottom_10, ['Institution', 'Study', 'AR Rank'], "🔻 Bottom 10 Uni
 # ===============================
 # 5. 📊 VISUALISASI GRAFIK BAR
 # ===============================
-def plot_metrics(df, title):
-    if df.empty:
-        st.warning("⚠️ Tidak ada data untuk ditampilkan.")
-        return
-
+def plot_metrics(df_subset, title_prefix):
     metrics = ['Academic', 'Employer', 'Citations', 'H', 'IRN', 'Score']
-    available_metrics = [col for col in metrics if col in df.columns]
-
-    if not available_metrics:
-        st.warning("⚠️ Tidak ada metrik yang tersedia untuk diplot.")
-        return
-
-    try:
-        fig, ax = plt.subplots(figsize=(10, 5))
-        df_plot = df.set_index('Institution')[available_metrics]
-        df_plot.plot(kind='bar', ax=ax)
-        ax.set_title(f"{title} Universities by Metric")
-        ax.set_ylabel("Nilai")
-        ax.set_xticklabels(df['Institution'], rotation=45, ha='right')
-
-        st.pyplot(fig)
-    except Exception as e:
-        st.error(f"Terjadi error saat membuat grafik: {e}")
-
     
     for metric in metrics:
         if metric in df_subset.columns:
@@ -176,6 +154,7 @@ for i in range(len(corr_matrix.columns)):
         st.write(f"{col1} ↔ {col2}: {value:.2f} {interpret_correlation_visual(value)}")
 
 
+
 # ===============================
 # ===============================
 # 📌 FILTER BERDASARKAN NEGARA
@@ -197,28 +176,6 @@ if 'Country' in df.columns:
 else:
     st.error("Kolom 'Country' tidak ditemukan dalam data.")
     df_filtered = df.copy()
-
-
-# ===============================
-# 📈 TREN TAHUNAN (JIKA ADA KOLOM TAHUN)
-# ===============================
-if 'Year' in df_filtered.columns:
-    st.subheader("📈 Tren Skor Rata-rata per Tahun")
-
-    df_tren = df_filtered[['Year', 'Score']].dropna()
-    if not df_tren.empty:
-        df_tren_grouped = df_tren.groupby('Year')['Score'].mean().reset_index()
-
-        fig, ax = plt.subplots(figsize=(8, 5))
-        sns.lineplot(x='Year', y='Score', data=df_tren_grouped, marker='o')
-        plt.title("Rata-rata Score per Tahun")
-        plt.xlabel("Tahun")
-        plt.ylabel("Score")
-        st.pyplot(fig)
-    else:
-        st.warning("⚠️ Data tren tahun tidak tersedia.")
-else:
-    st.info("📅 Kolom 'Year' tidak tersedia dalam dataset.")
 
 
 # ===============================
