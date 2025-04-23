@@ -30,13 +30,11 @@ st.write("🔢 Kolom yang Tersedia:", df.columns.tolist())
 # ===============================
 # 2. 🧼 BERSIHKAN DAN UBAH TIPE DATA
 # ===============================
-# Bersihkan nama kolom dari spasi ekstra
 df.columns = df.columns.str.strip()
 
 text_columns = ['Institution', 'Country', 'Study', 'Bagian', 'Schp']
 numeric_columns = [col for col in df.columns if col not in text_columns and col != '#']
 
-# Konversi kolom numerik
 cols_to_convert = ['Academic', 'Employer', 'Citations', 'H', 'IRN', 'Score']
 for col in cols_to_convert:
     if col in df.columns:
@@ -50,23 +48,30 @@ st.dataframe(df.head())
 # ===============================
 # 3. 🏅 PENGURUTAN DATA
 # ===============================
-df_sorted = df.sort_values(by='Academic', ascending=False).reset_index(drop=True)
-top_10 = df_sorted.head(10)
-bottom_10 = df_sorted.tail(10)
-middle_index = len(df_sorted) // 2
-middle_10 = df_sorted.iloc[middle_index-5:middle_index+5]
+if 'Academic' in df.columns:
+    df_sorted = df.sort_values(by='Academic', ascending=False).reset_index(drop=True)
+    top_10 = df_sorted.head(10)
+    bottom_10 = df_sorted.tail(10)
+    middle_index = len(df_sorted) // 2
+    middle_10 = df_sorted.iloc[middle_index-5:middle_index+5]
+else:
+    st.warning("Kolom 'Academic' tidak ditemukan untuk pengurutan.")
+    st.stop()
 
 # ===============================
 # 4. 📌 TAMPILKAN RINGKASAN
 # ===============================
-st.subheader("🏆 Top 10 Universitas:")
-st.dataframe(top_10[['Institution', 'Country', 'Study', 'AR Rank']])
+def safe_display(df_subset, cols, title):
+    available_cols = [col for col in cols if col in df_subset.columns]
+    if available_cols:
+        st.subheader(title)
+        st.dataframe(df_subset[available_cols])
+    else:
+        st.warning(f"Kolom tidak ditemukan: {cols}")
 
-st.subheader("🎯 Middle 10 Universitas:")
-st.dataframe(middle_10[['Institution', 'Study', 'AR Rank']])
-
-st.subheader("🔻 Bottom 10 Universitas:")
-st.dataframe(bottom_10[['Institution', 'Study', 'AR Rank']])
+safe_display(top_10, ['Institution', 'Country', 'Study', 'AR Rank'], "🏆 Top 10 Universitas:")
+safe_display(middle_10, ['Institution', 'Study', 'AR Rank'], "🎯 Middle 10 Universitas:")
+safe_display(bottom_10, ['Institution', 'Study', 'AR Rank'], "🔻 Bottom 10 Universitas:")
 
 # ===============================
 # 5. 📊 VISUALISASI GRAFIK BAR
@@ -83,8 +88,11 @@ def plot_metrics(df_subset, title_prefix):
             plt.xlabel(metric)
             plt.ylabel('Institution')
             for i, (value, name) in enumerate(zip(sorted_df[metric], sorted_df['Institution'])):
-                plt.text(value, i, f'{value:.2f}', va='center', ha='left', fontsize=9)
-            st.pyplot(plt)
+                if not pd.isna(value):
+                    plt.text(value, i, f'{value:.2f}', va='center', ha='left', fontsize=9)
+            st.pyplot(plt.gcf())
+            plt.clf()
+            plt.close()
 
 plot_metrics(top_10, '🏆 Top')
 plot_metrics(middle_10, '🎯 Middle')
@@ -98,7 +106,6 @@ numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
 st.subheader("📊 Statistik Deskriptif:")
 st.dataframe(df[numeric_columns].describe())
 
-# Nilai tertinggi dan terendah per metrik
 st.subheader("🏅 Nilai Tertinggi dan Terendah per Metrik:")
 for metric in numeric_columns:
     if df[metric].notna().any():
@@ -106,16 +113,20 @@ for metric in numeric_columns:
         bottom_uni = df.loc[df[metric].idxmin(), 'Institution']
         st.write(f"{metric}: tertinggi = {top_uni} ({df[metric].max():.2f}), terendah = {bottom_uni} ({df[metric].min():.2f})")
 
+# ===============================
 # Korelasi antar metrik
+# ===============================
 st.subheader("📌 Korelasi antar Metrik")
 plt.figure(figsize=(10, 8))
 corr_matrix = df[numeric_columns].corr()
 sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f")
 plt.title("🔍 Korelasi antar metrik")
 plt.tight_layout()
-st.pyplot(plt)
+st.pyplot(plt.gcf())
+plt.clf()
+plt.close()
 
-# Interpretasi visual korelasi
+# Interpretasi
 def interpret_correlation_visual(value):
     if value == 1:
         return "🟢 Sempurna (positif)"
