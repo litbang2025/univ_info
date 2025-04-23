@@ -41,8 +41,8 @@ for col in cols_to_convert:
         df[col] = df[col].astype(str).str.replace(',', '.', regex=False)
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-st.write("🧾 Tipe Data Setelah Dibersihkan:")
-st.write(df.dtypes)
+#st.write("🧾 Tipe Data Setelah Dibersihkan:")
+#st.write(df.dtypes)
 st.dataframe(df.head())
 
 # ===============================
@@ -175,3 +175,59 @@ if 'Country' in df.columns:
 else:
     st.error("Kolom 'Country' tidak ditemukan dalam data.")
     df_filtered = df.copy()
+
+
+# ===============================
+# 📈 TREN TAHUNAN (JIKA ADA KOLOM TAHUN)
+# ===============================
+if 'Year' in df_filtered.columns:
+    st.subheader("📈 Tren Skor Rata-rata per Tahun")
+
+    df_tren = df_filtered[['Year', 'Score']].dropna()
+    if not df_tren.empty:
+        df_tren_grouped = df_tren.groupby('Year')['Score'].mean().reset_index()
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+        sns.lineplot(x='Year', y='Score', data=df_tren_grouped, marker='o')
+        plt.title("Rata-rata Score per Tahun")
+        plt.xlabel("Tahun")
+        plt.ylabel("Score")
+        st.pyplot(fig)
+    else:
+        st.warning("⚠️ Data tren tahun tidak tersedia.")
+else:
+    st.info("📅 Kolom 'Year' tidak tersedia dalam dataset.")
+
+
+# ===============================
+# 🎓 PERBANDINGAN DUA UNIVERSITAS
+# ===============================
+st.sidebar.subheader("🎓 Bandingkan Dua Universitas")
+
+if 'Institution' in df_filtered.columns:
+    daftar_univ = df_filtered['Institution'].dropna().unique().tolist()
+
+    if len(daftar_univ) >= 2:
+        univ_1 = st.sidebar.selectbox("Universitas Pertama", sorted(daftar_univ))
+        univ_2 = st.sidebar.selectbox("Universitas Kedua", sorted(daftar_univ), index=1)
+
+        df_compare = df_filtered[df_filtered['Institution'].isin([univ_1, univ_2])]
+        metrics_to_plot = ['Academic', 'Employer', 'Citations', 'H', 'IRN', 'Score']
+
+        try:
+            df_plot = df_compare.set_index('Institution')[metrics_to_plot].T
+            st.subheader(f"📊 Perbandingan Antara {univ_1} dan {univ_2}")
+            fig, ax = plt.subplots(figsize=(8, 5))
+            df_plot.plot(kind='bar', ax=ax)
+            plt.title(f"Perbandingan Metrik")
+            plt.ylabel("Nilai")
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"Gagal menampilkan perbandingan: {e}")
+    else:
+        st.warning("⚠️ Minimal harus ada dua universitas untuk dibandingkan.")
+else:
+    st.error("Kolom 'Institution' tidak tersedia.")
+
