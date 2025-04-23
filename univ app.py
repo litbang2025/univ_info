@@ -195,18 +195,26 @@ if 'Institution' in df_filtered.columns:
 
         try:
             df_plot = df_compare.set_index('Institution')[metrics_to_plot].T
+
             st.subheader(f"📊 Perbandingan Antara {univ_1} dan {univ_2}")
-            fig, ax = plt.subplots(figsize=(8, 5))
-            df_plot.plot(kind='bar', ax=ax)
-            plt.title(f"Perbandingan Metrik")
-            plt.ylabel("Nilai")
-            plt.xticks(rotation=45)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            df_plot.plot(kind='barh', ax=ax, color=['#1f77b4', '#ff7f0e'])
+
+            ax.set_title("Perbandingan Metrik", fontsize=14)
+            ax.set_xlabel("Nilai", fontsize=12)
+            ax.set_ylabel("Metrik", fontsize=12)
+            ax.legend(title="Universitas", loc='best')
+
+            # Tambah label di ujung bar
+            for i in ax.containers:
+                ax.bar_label(i, fmt='%.1f', label_type='edge', fontsize=9)
+
             plt.tight_layout()
             st.pyplot(fig)
+
         except Exception as e:
             st.error(f"Gagal menampilkan perbandingan: {e}")
     else:
         st.warning("⚠️ Minimal harus ada dua universitas untuk dibandingkan.")
 else:
     st.error("Kolom 'Institution' tidak tersedia.")
-
